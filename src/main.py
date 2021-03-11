@@ -60,21 +60,33 @@ def get_uids(usernames_as_list):
     return ids
 
 
-def compare_followers(u1, u2):
+def retrieve_all_followers(uid):
     bearer_token = auth()
-    url1 = create_uid_url(u1)
-    url2 = create_uid_url(u2)
+    url = create_uid_url(uid)
     headers = create_headers(bearer_token)
     params = get_params()
-    r1 = connect_to_endpoint(url1, headers, params)
-    r2 = connect_to_endpoint(url2, headers, params)
+    params['max_results'] = 1000
+    
+    followers = set()
 
-    u1_followers = set()
-    u2_followers = set()
-    for user in r1['data']:
-        u1_followers.add(user['id'])
-    for user in r2['data']:
-        u2_followers.add(user['id'])
+    while True:
+        r = connect_to_endpoint(url, headers, params)
+        for u in r['data']:
+            followers.add(u['id'])
+        
+        print(r['meta'])
+        if 'next_token' in r['meta']:
+            params['pagination_token'] = r['meta']['next_token']
+        else:
+            break
+    
+    print(len(followers))
+    return followers
+    
+
+def compare_followers(uid1, uid2):
+    u1_followers = retrieve_all_followers(uid1)
+    u2_followers = retrieve_all_followers(uid2)
     intersection = u1_followers & u2_followers
 
     print(len(intersection))
