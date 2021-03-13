@@ -94,23 +94,6 @@ def retrieve_sample_followers(uid):
     return followers
     
 
-def compare_followers(uid1, uid2):
-    u1_followers = retrieve_all_followers(uid1)
-    u2_followers = retrieve_all_followers(uid2)
-    intersection = u1_followers & u2_followers
-
-    print(len(intersection))
-    print(len(u1_followers))
-    print(len(u2_followers))
-    degree_of_similarity = 0
-    if len(u1_followers) < len(u2_followers):
-        degree_of_similarity = len(intersection) / len(u1_followers)
-    else:
-        degree_of_similarity = len(intersection) / len(u2_followers)
-
-    return degree_of_similarity
-
-
 def retrieve_input_followers(filename):
     f = open(filename, "r")
     usernames = []
