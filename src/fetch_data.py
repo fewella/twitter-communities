@@ -117,7 +117,7 @@ def retrieve_input_followers(filename):
 
 
 def main():
-    input_filename = "data/input_usernames.txt"
+    input_filename = "../data/political_usernames.txt"
     retrieve_input_followers(input_filename)
 
 
