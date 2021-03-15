@@ -3,6 +3,13 @@ import os
 import json
 import time
 
+# TODO: make directories arguments
+
+general_data_dir = "../data/"
+output_data_dir = "../data/politicians_data/"
+input_data_dir = "../data/political_usernames.txt"
+
+
 def auth():
     return os.environ.get("BEARER_TOKEN")
 
@@ -43,7 +50,7 @@ def connect_to_endpoint(url, headers, params=None):
     return response.json()
 
 
-def get_uids(usernames_as_list):
+def get_uids(usernames_as_list, extended_data=False):
     usernames_as_str = ""
     for s in usernames_as_list:
         usernames_as_str += s + ","
@@ -56,15 +63,33 @@ def get_uids(usernames_as_list):
     
     print(r)
     if 'errors' in r:
-        return -1
+        return None
 
     ids = []
     for u in r['data']:
-        ids.append(u['id'])
+        if not extended_data:
+            ids.append(u['id'])
+        else:
+            ids.append(u)
     if len(ids) == 1:
         ids = ids[0]
 
     return ids
+
+
+def retrieve_input_names(filename):
+    f = open(filename, "r")
+    fout = open(general_data_dir + "names.txt", "w")
+    for line in f:
+        username = line.rstrip()
+        data = get_uids([username], extended_data=True)
+        if data == None:
+            print("Cannot retrieve for " + username + ".Skipping...")
+            continue
+        fout.write(username + " " + data["name"] + "\n")
+    f.close()
+    fout.close()
+
 
 
 def retrieve_sample_followers(uid):
@@ -107,19 +132,23 @@ def retrieve_input_followers(filename):
         if uid == -1:
             print("ERROR: could not find uid for", username, ". Skipping...")
             continue
-        followers = retrieve_sample_followers(uid)
         
-        user_output_file = "data/" + username + ".txt"
-        f = open(user_output_file, "w") 
-        for u in followers:
-            f.write(u + "\n")
-        f.close()
+        if get_names_only:
+            name = retrieve_name(uid)
+            fout.write(username + " " + name + "\n")
+        else:
+            followers = retrieve_sample_followers(uid)
+            
+            user_output_file = output_data_dir + username + ".txt"
+            f = open(user_output_file, "w") 
+            for u in followers:
+                f.write(u + "\n")
+            f.close()
 
 
 def main():
-    input_filename = "data/input_usernames.txt"
-    retrieve_input_followers(input_filename)
-
+    #retrieve_input_followers(input_data_dir)
+    retrieve_input_names(input_data_dir)
 
 if __name__ == "__main__":
     main()

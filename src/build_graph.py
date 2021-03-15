@@ -3,7 +3,10 @@ import os
 import networkx as nx
 import matplotlib.pyplot as plt
 
-data_directory = "../data/follower_data/"
+data_dir = "../data/"
+names_file = data_directory + "names.txt"
+followers_dir = data_directory + "politicians_data/"
+
 degree_threshold = 0.10
 
 
@@ -12,6 +15,16 @@ def get_followers_from_file(filename):
     followers = set([line.rstrip() for line in f])
     f.close()
     return followers
+
+
+def get_names_from_file(filename):
+    f = open(filename, "r")
+    names = {}
+    for line in f:
+        items = line.split()
+        names[items[0]] = "".join(items[1:])
+    f.close()
+    return names
 
 
 def similarity_degree(u1_followers, u2_followers):
@@ -25,9 +38,12 @@ def similarity_degree(u1_followers, u2_followers):
 
 
 def main():
+    read_names_to_labels = True
+
+    labels = get_names_from_file(names_file)
     follower_ids = {}
     usernames = []
-    for filename in os.listdir(data_directory):
+    for filename in os.listdir(followers_dir):
         username = filename.rstrip(".txt")
         follower_ids[username] = get_followers_from_file(data_directory + filename)
         usernames.append(username)
@@ -45,7 +61,10 @@ def main():
     graph_pos = nx.spring_layout(G, k=0.25, iterations=30)
     nx.draw_networkx_nodes(G, graph_pos)
     nx.draw_networkx_edges(G, graph_pos)
-    nx.draw_networkx_labels(G, graph_pos)
+    if read_names_to_labels:
+        nx.draw_networkx_labels(G, graph_pos, labels=labels)
+    else:
+        nx.draw_networkx_labels(G, graph_pos)
 
     plt.savefig("graph.png")
 
