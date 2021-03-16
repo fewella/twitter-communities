@@ -17,6 +17,16 @@ followers_dir = data_dir + "politicians_data/"
 degree_threshold = 0.13
 
 
+def read_political_parties(filename):
+    parties = {}
+    f = open(filename, "r")
+    for line in f:
+        username, party = line.split()
+        parties[username] = party
+    f.close()
+    return parties
+
+
 def get_followers_from_file(filename):
     f = open(filename, "r")
     followers = set([line.rstrip() for line in f])
@@ -44,7 +54,7 @@ def similarity_degree(u1_followers, u2_followers):
     return degree
 
 
-def host_interactive_graph(G, pos):
+def host_interactive_graph(G, pos, parties):
     app = dash.Dash(__name__)
 
     width = 1400
@@ -54,23 +64,45 @@ def host_interactive_graph(G, pos):
     for n in G.nodes:
         x = int((width / 2) * (pos[n][0] + 1))
         y = int((height / 2) * (pos[n][1] + 1))
+        if n in parties:
+            p = parties[n]
+        else:
+            p = ''
         
         graph_elements.append({
             'data': {'id': n, 'label': n}, 
-            'position': {'x': x, 'y': y}
+            'position': {'x': x, 'y': y},
+            'classes': p
         })
     
     for e in G.edges:
         if e[0] != e[1]:
-            graph_elements.append({'data': {'source': e[0], 'target': e[1]}})
+            graph_elements.append({
+                'data': {'source': e[0], 'target': e[1]},
+            })
 
     app.layout = html.Div([
-        html.P("Communities"),
         cyto.Cytoscape(
             id='cytoscape',
             elements = graph_elements,
             layout = {'name': 'preset'},
-            style = {'width': str(width) + 'px', 'height': str(height) + 'px'}
+            style = {'width': str(width) + 'px', 'height': str(height) + 'px'},
+            stylesheet = [{
+                'selector': 'node',
+                'style': {
+                    'content': 'data(label)'
+                }
+            }, {
+                'selector': '.rep',
+                'style': {
+                    'background-color': '#FF0000'
+                }
+            }, {
+                'selector': '.dem',
+                'style': {
+                    'background-color': '#0015BC'
+                }
+            }]
         )
     ])
 
@@ -93,16 +125,10 @@ def main():
             if similarity_degree(follower_ids[user1], follower_ids[user2]) >= degree_threshold:
                 if not G.has_edge(user1, user2):
                     G.add_edge(user1, user2)
-
-    plt.figure(figsize=(32,32))
     
-    graph_pos = nx.spring_layout(G, k=0.3, iterations=40)
-    nx.draw_networkx_nodes(G, graph_pos, node_color="#cdffc9")
-    nx.draw_networkx_edges(G, graph_pos, edge_color="#c2c2c2")
-    nx.draw_networkx_labels(G, graph_pos)
-
-    host_interactive_graph(G, graph_pos)
-    #plt.savefig("graph.png")
+    parties = read_political_parties(data_dir + "political_parties.txt")
+    graph_pos = nx.spring_layout(G, k=0.3, iterations=30)
+    host_interactive_graph(G, graph_pos, parties)
 
 
 if __name__ == "__main__":
