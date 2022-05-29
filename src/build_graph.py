@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -10,12 +11,15 @@ import dash_cytoscape as cyto
 from dash.dependencies import Input, Output
 import plotly.express as px
 
-data_dir = "../data/"
-names_file = data_dir + "names.txt"
-followers_dir = data_dir + "politicians_data/"
+
+root_dir      = str(Path(__file__).parent.parent.absolute())
+data_dir      = os.path.join(root_dir, 'data/')
+names_file    = os.path.join(data_dir, 'names.txt')
+followers_dir = os.path.join(data_dir, 'politicians_data/')
 
 degree_threshold = 0.13
 
+app = None
 
 def read_political_parties(filename):
     parties = {}
@@ -46,16 +50,11 @@ def get_names_from_file(filename):
 
 def similarity_degree(u1_followers, u2_followers):
     intersect = u1_followers & u2_followers
-    degree = 0
-    if len(u1_followers) < len(u2_followers):
-        degree = len(intersect) / len(u1_followers)
-    else:
-        degree = len(intersect) / len(u2_followers)
-    return degree
+    return len(intersect) / max(len(u1_followers), len(u2_followers))
 
 
 def host_interactive_graph(G, pos, parties):
-    app = dash.Dash(__name__)
+    dash_app = dash.Dash(__name__)
 
     width = 1400
     height = 1000
@@ -64,10 +63,7 @@ def host_interactive_graph(G, pos, parties):
     for n in G.nodes:
         x = int((width / 2) * (pos[n][0] + 1))
         y = int((height / 2) * (pos[n][1] + 1))
-        if n in parties:
-            p = parties[n]
-        else:
-            p = ''
+        p = parties[n] if n in parties else ''
         
         graph_elements.append({
             'data': {'id': n, 'label': n}, 
@@ -81,7 +77,7 @@ def host_interactive_graph(G, pos, parties):
                 'data': {'source': e[0], 'target': e[1]},
             })
 
-    app.layout = html.Div([
+    dash_app.layout = html.Div([
         cyto.Cytoscape(
             id='cytoscape',
             elements = graph_elements,
@@ -106,7 +102,10 @@ def host_interactive_graph(G, pos, parties):
         )
     ])
 
-    app.run_server(debug=True)
+    dash_app.run_server(debug=True)
+    
+    global app
+    app = dash_app.server
 
 
 def main():
@@ -131,5 +130,4 @@ def main():
     host_interactive_graph(G, graph_pos, parties)
 
 
-if __name__ == "__main__":
-    main()
+main()
